@@ -1,5 +1,6 @@
 pub mod account;
 pub mod activity;
+pub mod addon;
 pub mod asset;
 pub mod goal;
 pub mod limits;
@@ -7,3 +8,6 @@ pub mod market_data;
 pub mod portfolio;
 pub mod settings;
 pub mod utilities;
+pub mod secrets;
+pub mod providers_settings;
+pub mod error;

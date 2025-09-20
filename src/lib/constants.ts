@@ -46,6 +46,7 @@ export const ImportFormat = {
   AMOUNT: 'amount',
   CURRENCY: 'currency',
   FEE: 'fee',
+  ACCOUNT: 'account',
   COMMENT: 'comment',
 } as const;
 
@@ -60,6 +61,7 @@ export const importFormatSchema = z.enum([
   ImportFormat.AMOUNT,
   ImportFormat.CURRENCY,
   ImportFormat.FEE,
+  ImportFormat.ACCOUNT,
   ImportFormat.COMMENT,
 ]);
 
@@ -169,8 +171,8 @@ export const ActivityTypeNames: Record<ActivityType, string> = {
   [ActivityType.INTEREST]: 'Interest',
   [ActivityType.DEPOSIT]: 'Deposit',
   [ActivityType.WITHDRAWAL]: 'Withdrawal',
-  [ActivityType.ADD_HOLDING]: 'Add Asset',
-  [ActivityType.REMOVE_HOLDING]: 'Remove Asset',
+  [ActivityType.ADD_HOLDING]: 'Add Holding',
+  [ActivityType.REMOVE_HOLDING]: 'Remove Holding',
   [ActivityType.TRANSFER_IN]: 'Transfer In',
   [ActivityType.TRANSFER_OUT]: 'Transfer Out',
   [ActivityType.FEE]: 'Fee',

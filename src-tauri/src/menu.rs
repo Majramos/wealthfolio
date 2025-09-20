@@ -1,11 +1,12 @@
 use tauri::menu::{Menu, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Manager, Runtime, Emitter};
 use tauri_plugin_dialog::DialogExt;
 
 pub fn create_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Error> {
     let app_menu = SubmenuBuilder::new(app, "Wealthfolio")
-        .item(&PredefinedMenuItem::about(app, None, None)?)
         .item(&MenuItemBuilder::with_id("check_for_update", "Check for Update").build(app)?)
+        .separator()
+        .item(&MenuItemBuilder::with_id("open_settings", "Settings...").build(app)?)
         .separator()
         .item(&PredefinedMenuItem::hide(app, None).unwrap())
         .item(&PredefinedMenuItem::hide_others(app, None).unwrap())
@@ -25,7 +26,11 @@ pub fn create_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Err
         .build()?;
 
     let view_menu = SubmenuBuilder::new(app, "View")
-        .item(&MenuItemBuilder::with_id("toggle_fullscreen", "Toggle Fullscreen").build(app)?)
+        .item(
+            &MenuItemBuilder::with_id("toggle_fullscreen", "Toggle Fullscreen")
+                .accelerator("F11")
+                .build(app)?
+        )
         .build()?;
 
     let help_menu = SubmenuBuilder::new(app, "Help")
@@ -34,7 +39,7 @@ pub fn create_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Err
         // Add the new menu item for checking updates
         .item(&MenuItemBuilder::with_id("check_for_update", "Check for Update").build(app)?)
         .separator()
-        .item(&PredefinedMenuItem::about(app, None, None)?)
+        .item(&MenuItemBuilder::with_id("show_about_dialog", "About Wealthfolio").build(app)?)
         .build()?;
 
     let menu = MenuBuilder::new(app)
@@ -49,6 +54,12 @@ pub fn create_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>, tauri::Err
 
 pub fn handle_menu_event(app: &AppHandle, instance_id: &str, event_id: &str) {
     match event_id {
+        "open_settings" => {
+            if let Some(window) = app.get_webview_window("main") {
+                let payload = serde_json::json!({ "route": "/settings/general" });
+                let _ = window.emit("navigate-to-route", payload);
+            }
+        }
         "report_issue" => {
             app.dialog()
                 .message("If you encounter any issues, please email us at wealthfolio@teymz.com")
@@ -57,7 +68,12 @@ pub fn handle_menu_event(app: &AppHandle, instance_id: &str, event_id: &str) {
         }
         "toggle_fullscreen" => {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.set_fullscreen(true);
+                if let Ok(is_fullscreen) = window.is_fullscreen() {
+                    let _ = window.set_fullscreen(!is_fullscreen);
+                } else {
+                    // if getting fullscreen state fails just try toggling
+                    let _ = window.set_fullscreen(false);
+                }
             }
         }
         "check_for_update" => {
@@ -66,6 +82,16 @@ pub fn handle_menu_event(app: &AppHandle, instance_id: &str, event_id: &str) {
             tauri::async_runtime::spawn(async move {
                 crate::updater::check_for_update(app_handle, &instance_id, true).await;
             });
+        }
+        "show_about_dialog" => {
+            let package_info = app.package_info();
+            let app_name = &package_info.name;
+            let app_version = &package_info.version.to_string();
+            let message = format!("{} version {}", app_name, app_version);
+            app.dialog()
+                .message(message)
+                .title(&format!("About {}", app_name))
+                .show(|_| {});
         }
         _ => {}
     }

@@ -48,6 +48,9 @@ pub enum Error {
     #[error("Holdings calculation failed: {0}")]
     Calculation(#[from] CalculatorError),
 
+    #[error("Secret store error: {0}")]
+    Secret(String),
+
     #[error("Unexpected error: {0}")]
     Unexpected(String),
 
@@ -99,6 +102,8 @@ pub enum CalculatorError {
         activity_id: String,
         activity_currency: String,
     },
+    #[error("Currency conversion failed: {0}")]
+    CurrencyConversion(String),
     #[error("FX rate {0}->{1} not found in pre-fetched cache for date {2}")]
     MissingFxRate(String, String, NaiveDate),
     #[error("Position not found for asset {asset_id} in account {account_id} during operation")]
@@ -185,6 +190,12 @@ impl From<r2d2::Error> for Error {
 impl From<diesel::ConnectionError> for Error {
     fn from(err: diesel::ConnectionError) -> Self {
         Error::Database(DatabaseError::ConnectionFailed(err))
+    }
+}
+
+impl From<keyring::Error> for Error {
+    fn from(err: keyring::Error) -> Self {
+        Error::Secret(err.to_string())
     }
 }
 

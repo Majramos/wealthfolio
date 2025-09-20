@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { EmptyPlaceholder } from '@/components/empty-placeholder';
-import { Separator } from '@/components/ui/separator';
+import { EmptyPlaceholder, Separator, Icons, Button, Skeleton } from '@wealthfolio/ui';
 import { GoalItem } from './components/goal-item';
 import { GoalEditModal } from './components/goal-edit-modal';
-import { Button } from '@/components/ui/button';
-import { Icons } from '@/components/icons';
 import type { Goal, GoalAllocation } from '@/lib/types';
 import { SettingsHeader } from '../header';
 import { getGoals, getGoalsAllocation } from '@/commands/goal';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import GoalsAllocations from './components/goal-allocations';
 import { useAccounts } from '@/hooks/use-accounts';
@@ -100,13 +96,13 @@ const SettingsGoalsPage = () => {
           ) : (
             <EmptyPlaceholder>
               <EmptyPlaceholder.Icon name="Goal" />
-              <EmptyPlaceholder.Title>No goal added!</EmptyPlaceholder.Title>
+              <EmptyPlaceholder.Title>No goals added!</EmptyPlaceholder.Title>
               <EmptyPlaceholder.Description>
-                You don&apos;t have any goal yet. Start adding your investment goals.
+                You don&apos;t have any goals yet. Start adding your investment goals.
               </EmptyPlaceholder.Description>
               <Button onClick={() => handleAddGoal()}>
                 <Icons.Plus className="mr-2 h-4 w-4" />
-                Add an goal
+                Add a goal
               </Button>
             </EmptyPlaceholder>
           )}

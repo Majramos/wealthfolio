@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Icons } from '@/components/icons';
+import { Icons } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
@@ -28,7 +28,7 @@ export function SidebarNav({ navigation }: { navigation: NavigationProps }) {
   return (
     <div
       className={cn({
-        'light:bg-secondary/50 h-screen border-r pt-12 transition-[width] duration-300 ease-in-out md:flex':
+  'light:bg-secondary/50 h-screen box-border border-r pt-12 transition-[width] duration-300 ease-in-out md:flex':
           true,
         'md:w-sidebar': !collapsed,
         'md:w-sidebar-collapsed': collapsed,
@@ -42,7 +42,7 @@ export function SidebarNav({ navigation }: { navigation: NavigationProps }) {
               <nav
                 data-tauri-drag-region="true"
                 aria-label="Sidebar"
-                className="flex flex-shrink-0 flex-col space-y-3 p-2"
+                className="flex flex-shrink-0 flex-col p-2"
               >
                 <div
                   data-tauri-drag-region="true"

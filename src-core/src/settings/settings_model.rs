@@ -10,6 +10,8 @@ pub struct Settings {
     pub base_currency: String,
     pub instance_id: String,
     pub onboarding_completed: bool,
+    pub auto_update_check_enabled: bool,
+    pub menu_bar_visible: bool,
 }
 
 impl Default for Settings {
@@ -20,6 +22,8 @@ impl Default for Settings {
             base_currency: "".to_string(),
             instance_id: "".to_string(),
             onboarding_completed: false,
+            auto_update_check_enabled: true,
+            menu_bar_visible: true,
         }
     }
 }
@@ -31,6 +35,8 @@ pub struct SettingsUpdate {
     pub font: Option<String>,
     pub base_currency: Option<String>,
     pub onboarding_completed: Option<bool>,
+    pub auto_update_check_enabled: Option<bool>,
+    pub menu_bar_visible: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

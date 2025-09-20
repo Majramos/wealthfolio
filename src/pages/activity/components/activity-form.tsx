@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { logger } from '@/adapters';
-import { Icons } from '@/components/icons';
+import { Icons } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -50,6 +50,7 @@ const ACTIVITY_TYPE_TO_TAB: Record<string, string> = {
   TRANSFER_IN: 'cash',
   TRANSFER_OUT: 'cash',
   FEE: 'other',
+  TAX: 'other',
   ADD_HOLDING: 'holdings',
   REMOVE_HOLDING: 'holdings',
 };
@@ -57,29 +58,30 @@ const ACTIVITY_TYPE_TO_TAB: Record<string, string> = {
 export function ActivityForm({ accounts, activity, open, onClose }: ActivityFormProps) {
   const { addActivityMutation, updateActivityMutation } = useActivityMutations(onClose);
 
-  const isValidActivityType = (type: string | undefined): type is NewActivityFormValues['activityType'] => {
+  const isValidActivityType = (
+    type: string | undefined,
+  ): type is NewActivityFormValues['activityType'] => {
     return type ? Object.keys(ACTIVITY_TYPE_TO_TAB).includes(type) : false;
   };
   const defaultValues: Partial<NewActivityFormValues> = {
     id: activity?.id,
     accountId: activity?.accountId || '',
     activityType: isValidActivityType(activity?.activityType) ? activity.activityType : undefined,
-    amount: activity?.amount ,
-    quantity: activity?.quantity ,
+    amount: activity?.amount,
+    quantity: activity?.quantity,
     unitPrice: activity?.unitPrice,
     fee: activity?.fee || 0,
     isDraft: activity?.isDraft || false,
     comment: activity?.comment || null,
     assetId: activity?.assetId,
     activityDate: activity?.date ? (() => {
-      const date = new Date(activity.date);
-      date.setHours(16, 0, 0, 0); // Set to 4:00 PM which is market close time
-      return date;
+      return new Date(activity.date);
     })() : (() => {
       const date = new Date();
       date.setHours(16, 0, 0, 0); // Set to 4:00 PM which is market close time
       return date;
     })(),
+
     currency: activity?.currency || '',
     assetDataSource: activity?.assetDataSource || DataSource.YAHOO,
     showCurrencySelect: false,
@@ -89,7 +91,7 @@ export function ActivityForm({ accounts, activity, open, onClose }: ActivityForm
     resolver: zodResolver(newActivitySchema),
     defaultValues,
   });
-  
+
   // Reset form when dialog closes or activity changes
   useEffect(() => {
     if (!open) {
@@ -105,18 +107,22 @@ export function ActivityForm({ accounts, activity, open, onClose }: ActivityForm
 
   async function onSubmit(data: NewActivityFormValues) {
     try {
-      const { showCurrencySelect, ...submissionData } = { ...data, isDraft: false };
-      const { id, ...submitData } = submissionData;
-
-      // For cash activities and fees, set assetId to $CASH-accountCurrency and currency
-      if (['DEPOSIT', 'WITHDRAWAL', 'INTEREST', 'FEE', 'TRANSFER_IN', 'TRANSFER_OUT'].includes(submitData.activityType)) {
-        const account = accounts.find((a) => a.value === submitData.accountId);
+      const { showCurrencySelect, id, ...submitData } = { ...data, isDraft: false };
+      const account = accounts.find((a) => a.value === submitData.accountId);
+      // For cash activities and fees, set assetId to $CASH-accountCurrency
+      if (
+        ['DEPOSIT', 'WITHDRAWAL', 'INTEREST', 'FEE', 'TAX', 'TRANSFER_IN', 'TRANSFER_OUT'].includes(
+          submitData.activityType,
+        )
+      ) {
         if (account) {
           submitData.assetId = `$CASH-${account.currency}`;
-          submitData.currency = submitData.currency || account.currency;
         }
       }
 
+      if ('assetDataSource' in submitData && submitData.assetDataSource === DataSource.MANUAL && account) {
+        submitData.currency = submitData.currency || account.currency;
+      }
       if (id) {
         return await updateActivityMutation.mutateAsync({ id, ...submitData });
       }
@@ -128,11 +134,13 @@ export function ActivityForm({ accounts, activity, open, onClose }: ActivityForm
     }
   }
 
-  const defaultTab = activity ? ACTIVITY_TYPE_TO_TAB[activity.activityType] || 'holdings' : 'holdings';
+  const defaultTab = activity
+    ? ACTIVITY_TYPE_TO_TAB[activity.activityType] || 'trade'
+    : 'trade';
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="space-y-8 sm:max-w-[625px]">
+      <SheetContent className="space-y-8 overflow-y-auto sm:max-w-[625px]">
         <SheetHeader>
           <div className="flex items-center gap-2">
             <SheetTitle>{activity?.id ? 'Update Activity' : 'Add Activity'}</SheetTitle>
@@ -176,13 +184,13 @@ export function ActivityForm({ accounts, activity, open, onClose }: ActivityForm
         <Tabs defaultValue={defaultTab} className="w-full">
           {!activity?.id && (
             <TabsList className="mb-6 grid grid-cols-5">
-              <TabsTrigger value="holdings" className="flex items-center gap-2">
-                <Icons.Wallet className="h-4 w-4" />
-                Holdings
-              </TabsTrigger>
               <TabsTrigger value="trade" className="flex items-center gap-2">
                 <Icons.ArrowRightLeft className="h-4 w-4" />
                 Trade
+              </TabsTrigger>
+              <TabsTrigger value="holdings" className="flex items-center gap-2">
+                <Icons.Wallet className="h-4 w-4" />
+                Holdings
               </TabsTrigger>
               <TabsTrigger value="cash" className="flex items-center gap-2">
                 <Icons.DollarSign className="h-4 w-4" />
@@ -202,11 +210,11 @@ export function ActivityForm({ accounts, activity, open, onClose }: ActivityForm
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid gap-4">
-                <TabsContent value="holdings">
-                  <HoldingsForm accounts={accounts} />
-                </TabsContent>
                 <TabsContent value="trade">
                   <TradeForm accounts={accounts} />
+                </TabsContent>
+                <TabsContent value="holdings">
+                  <HoldingsForm accounts={accounts} />
                 </TabsContent>
                 <TabsContent value="cash">
                   <CashForm accounts={accounts} />

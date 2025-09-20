@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import { ApplicationHeader } from '@/components/header';
-import { ApplicationShell } from '@/components/shell';
-
-import { GainAmount } from '@/components/gain-amount';
-import { GainPercent } from '@/components/gain-percent';
+import {
+  ApplicationShell,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  GainAmount,
+  GainPercent,
+  IntervalSelector,
+  PrivacyAmount,
+} from '@wealthfolio/ui';
 import { HistoryChart } from '@/components/history-chart';
-import IntervalSelector from '@/components/interval-selector';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {} from '@/components/ui/card';
 
 import { useParams } from 'react-router-dom';
 import AccountMetrics from './account-metrics';
@@ -14,7 +20,6 @@ import AccountHoldings from './account-holdings';
 import { AccountValuation, DateRange, TrackedItem, TimePeriod } from '@/lib/types';
 import { useAccounts } from '@/hooks/use-accounts';
 import { AccountContributionLimit } from './account-contribution-limit';
-import { PrivacyAmount } from '@/components/privacy-amount';
 import { PrivacyToggle } from '@/components/privacy-toggle';
 import { useValuationHistory } from '@/hooks/use-valuation-history';
 import { PortfolioUpdateTrigger } from '@/pages/dashboard/portfolio-update-trigger';
@@ -41,7 +46,8 @@ const INITIAL_INTERVAL_CODE: TimePeriod = '3M';
 const AccountPage = () => {
   const { id = '' } = useParams<{ id: string }>();
   const [dateRange, setDateRange] = useState<DateRange | undefined>(getInitialDateRange());
-  const [selectedIntervalCode, setSelectedIntervalCode] = useState<TimePeriod>(INITIAL_INTERVAL_CODE);
+  const [selectedIntervalCode, setSelectedIntervalCode] =
+    useState<TimePeriod>(INITIAL_INTERVAL_CODE);
 
   const { accounts, isLoading: isAccountsLoading } = useAccounts();
   const account = useMemo(() => accounts?.find((acc) => acc.id === id), [accounts, id]);
@@ -67,9 +73,10 @@ const AccountPage = () => {
   );
 
   // Calculate gainLossAmount and simpleReturn from valuationHistory
-  const { gainLossAmount: frontendGainLossAmount, simpleReturn: frontendSimpleReturn } = useMemo(() => {
-    return calculatePerformanceMetrics(valuationHistory, false);
-  }, [valuationHistory, id]);
+  const { gainLossAmount: frontendGainLossAmount, simpleReturn: frontendSimpleReturn } =
+    useMemo(() => {
+      return calculatePerformanceMetrics(valuationHistory, false);
+    }, [valuationHistory, id]);
 
   const chartData: HistoryChartData[] = useMemo(() => {
     if (!valuationHistory) return [];
@@ -90,7 +97,7 @@ const AccountPage = () => {
   const handleIntervalSelect = (
     code: TimePeriod,
     _description: string,
-    range: DateRange | undefined
+    range: DateRange | undefined,
   ) => {
     setSelectedIntervalCode(code);
     setDateRange(range);

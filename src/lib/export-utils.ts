@@ -10,8 +10,15 @@ export function formatData(data: any, format: ExportedFileFormat): string {
   return '';
 }
 
-function convertToCSV(data: any) {
-  const array = [Object.keys(data[0])].concat(data);
+export function convertToCSV(data: any) {
+  if (!data || data.length === 0) return '';
+  let headers = Object.keys(data[0]);
+  // Check if 'assetID' is present and replace it with 'symbol'
+  const assetIDIndex = headers.indexOf('assetId');
+  if (assetIDIndex !== -1) {
+    headers[assetIDIndex] = 'symbol';
+  }
+  const array = [headers].concat(data);
   return array
     .map((row) => {
       return Object.values(row)

@@ -17,6 +17,15 @@ pub async fn get_settings(state: State<'_, Arc<ServiceContext>>) -> Result<Setti
 }
 
 #[tauri::command]
+pub async fn is_auto_update_check_enabled(state: State<'_, Arc<ServiceContext>>) -> Result<bool, String> {
+    debug!("Checking if auto-update check is enabled...");
+    state
+        .settings_service()
+        .is_auto_update_check_enabled()
+        .map_err(|e| format!("Failed to check auto-update setting: {}", e))
+}
+
+#[tauri::command]
 pub async fn update_settings(
     settings_update: SettingsUpdate,
     state: State<'_, Arc<ServiceContext>>,
@@ -43,6 +52,27 @@ pub async fn update_settings(
         .update_settings(&settings_update)
         .await
         .map_err(|e| format!("Failed to update settings: {}", e))?;
+
+    if let Some(menu_visible) = settings_update.menu_bar_visible {
+        if menu_visible {
+            // Create and set the menu
+            match crate::menu::create_menu(&handle) {
+                Ok(menu) => {
+                    if let Err(e) = handle.set_menu(menu) {
+                        debug!("Failed to set menu: {}", e);
+                    }
+                }
+                Err(e) => {
+                    debug!("Failed to create menu: {}", e);
+                }
+            }
+        } else {
+            // Remove the menu entirely by setting it to None
+            if let Err(e) = handle.remove_menu() {
+                debug!("Failed to remove menu: {}", e);
+            }
+        }
+    }
 
     // If the base currency was changed, update the state and emit the event
     if base_currency_changed {

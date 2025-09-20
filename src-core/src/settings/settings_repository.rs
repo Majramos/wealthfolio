@@ -50,6 +50,13 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     // Parse the string value into a boolean
                     settings.onboarding_completed = value.parse().unwrap_or(false);
                 }
+                "auto_update_check_enabled" => {
+                    // Parse the string value into a boolean
+                    settings.auto_update_check_enabled = value.parse().unwrap_or(true);
+                }
+                "menu_bar_visible" => {
+                    settings.menu_bar_visible = value.parse().unwrap_or(true);
+                }
                 _ => {} // Ignore unknown settings
             }
         }
@@ -101,6 +108,24 @@ impl SettingsRepositoryTrait for SettingsRepository {
                         .execute(conn)?;
                 }
 
+                if let Some(auto_update_check_enabled) = settings.auto_update_check_enabled {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSetting {
+                            setting_key: "auto_update_check_enabled".to_string(),
+                            setting_value: auto_update_check_enabled.to_string(),
+                        })
+                        .execute(conn)?;
+                }
+
+                if let Some(menu_bar_visible) = settings.menu_bar_visible {
+                    diesel::replace_into(app_settings)
+                        .values(&AppSetting {
+                            setting_key: "menu_bar_visible".to_string(),
+                            setting_value: menu_bar_visible.to_string(),
+                        })
+                        .execute(conn)?;
+                }
+
                 Ok(())
             })
             .await
@@ -121,6 +146,8 @@ impl SettingsRepositoryTrait for SettingsRepository {
                     "theme" => "light",
                     "font" => "font-mono",
                     "onboarding_completed" => "false", // Add default for onboarding_completed
+                    "auto_update_check_enabled" => "true", // Add default for auto_update_check_enabled
+                    "menu_bar_visible" => "true",
                     _ => return Err(Error::from(diesel::result::Error::NotFound)),
                 };
                 Ok(default_value.to_string())

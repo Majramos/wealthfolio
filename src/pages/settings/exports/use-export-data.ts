@@ -9,14 +9,14 @@ import {
 } from '@/lib/types';
 import { logger } from '@/adapters';
 import { toast } from '@/components/ui/use-toast';
-import { backupDatabase } from '@/commands/settings';
-import { openFileSaveDialog } from '@/commands/file';
+import { openFileSaveDialog, openFolderDialog } from '@/commands/file';
 import { formatData } from '@/lib/export-utils';
 import { QueryKeys } from '@/lib/query-keys';
 import { getAccounts } from '@/commands/account';
 import { getActivities } from '@/commands/activity';
 import { getGoals } from '@/commands/goal';
 import { getHistoricalValuations } from '@/commands/portfolio';
+import { backupDatabaseToPath } from '@/commands/settings';
 
 interface ExportParams {
   format: ExportedFileFormat;
@@ -41,7 +41,7 @@ export function useExportData() {
   });
   const { refetch: fetchPortfolioHistory } = useQuery<AccountValuation[], Error>({
     queryKey: [QueryKeys.HISTORY_VALUATION],
-    queryFn: () => getHistoricalValuations(),
+    queryFn: () => getHistoricalValuations("TOTAL"),
     enabled: false,
   });
 
@@ -53,42 +53,80 @@ export function useExportData() {
     mutationFn: async (params: ExportParams) => {
       const { format, data: desiredData } = params;
       if (format === 'SQLite') {
-        const sqliteFile = await backupDatabase();
-        return openFileSaveDialog(sqliteFile.data, sqliteFile.filename);
+        // Open folder dialog to let user choose backup location
+        const selectedDir = await openFolderDialog();
+        
+        if (!selectedDir) {
+          // User cancelled the dialog, return null to indicate cancellation
+          return null;
+        }
+
+        // Create backup in selected directory
+        const backupPath = await backupDatabaseToPath(selectedDir);
+        return { success: true, path: backupPath };
       } else {
         let exportedData: string | undefined;
         let fileName: string;
+        let datasetLabel: string | null = null;
 
         const currentDate = new Date().toISOString().split('T')[0];
         switch (desiredData) {
           case 'accounts':
             exportedData = await fetchAndFormatData(fetchAccounts, format);
             fileName = `accounts_${currentDate}.${format.toLowerCase()}`;
+            datasetLabel = 'accounts';
             break;
           case 'activities':
             exportedData = await fetchAndFormatData(fetchActivities, format);
             fileName = `activities_${currentDate}.${format.toLowerCase()}`;
+            datasetLabel = 'activities';
             break;
           case 'goals':
             exportedData = await fetchAndFormatData(fetchGoals, format);
             fileName = `goals_${currentDate}.${format.toLowerCase()}`;
+            datasetLabel = 'goals';
             break;
           case 'portfolio-history':
             exportedData = await fetchAndFormatData(fetchPortfolioHistory, format);
             fileName = `portfolio-history_${currentDate}.${format.toLowerCase()}`;
+            datasetLabel = 'portfolio history records';
             break;
         }
 
         if (exportedData) {
           return openFileSaveDialog(exportedData, fileName);
         }
+
+        if (datasetLabel) {
+          toast({
+            title: 'Nothing to export.',
+            description: `No ${datasetLabel} available to export right now.`,
+          });
+        }
+
+        return null;
       }
     },
-    onSuccess: () => {
-      toast({
-        title: 'File saved successfully.',
-        variant: 'success',
-      });
+    onSuccess: (result) => {
+      if (!result) {
+        // User cancelled the operation, don't show any message
+        return;
+      }
+
+      if (result && typeof result === 'object' && 'path' in result) {
+        // SQLite backup success
+        toast({
+          title: 'Database backup completed successfully.',
+          description: `Backup saved to: ${result.path}`,
+          variant: 'success',
+        });
+      } else {
+        // Regular export success
+        toast({
+          title: 'File saved successfully.',
+          variant: 'success',
+        });
+      }
     },
     onError: (e) => {
       logger.error(`Error while exporting: ${e}`);
